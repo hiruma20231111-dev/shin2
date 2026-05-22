@@ -1,7 +1,7 @@
 // ============================================================
 // Hub Workspace — PostgreSQL Connection Pool
 // ============================================================
-import { Pool, QueryResult } from 'pg';
+import { Pool, QueryResult, QueryResultRow } from 'pg';
 
 if (!process.env['DATABASE_URL']) {
   console.warn('[pool] DATABASE_URL is not set. Database calls will fail.');
@@ -21,11 +21,11 @@ pool.on('error', (err) => {
 export default pool;
 
 /**
- * Convenience query helper that uses the default pool.
+ * Convenience query helper with optional row-type generic.
  */
-export async function query(
+export async function query<T extends QueryResultRow = QueryResultRow>(
   text: string,
   params?: unknown[]
-): Promise<QueryResult> {
-  return pool.query(text, params as unknown[]);
+): Promise<QueryResult<T>> {
+  return pool.query<T>(text, params as unknown[]);
 }
