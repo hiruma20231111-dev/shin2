@@ -8,6 +8,7 @@ import crypto from 'crypto';
 import { z } from 'zod';
 import { query } from '../db/pool';
 import { AppError } from '../errors';
+import { authenticate } from '../middleware/auth';
 import {
   API_ERROR_CODES,
   JWT_ACCESS_EXPIRES_IN_SEC,
@@ -168,6 +169,26 @@ router.post('/refresh', async (req: Request, res: Response, next: NextFunction) 
 
     const accessToken = signAccessToken({ userId: payload.userId, email: payload.email, role: payload.role });
     res.json({ success: true, data: { accessToken } });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// ── GET /me — return current user from access token ──────────
+router.get('/me', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const result = await query<{ id: string; email: string; name: string; role: string; is_active: boolean }>(
+      `SELECT id, email, name, role, is_active FROM users WHERE id = $1`,
+      [req.user!.userId],
+    );
+    if (result.rows.length === 0) {
+      throw new AppError('ユーザーが見つかりません', API_ERROR_CODES.NOT_FOUND, 404);
+    }
+    const u = result.rows[0];
+    if (!u.is_active) {
+      throw new AppError('アカウントが無効化されています', API_ERROR_CODES.FORBIDDEN, 403);
+    }
+    res.json({ success: true, data: u });
   } catch (e) {
     next(e);
   }

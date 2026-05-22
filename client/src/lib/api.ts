@@ -130,6 +130,8 @@ export const authApi = {
   logout: () => api.post('/auth/logout'),
 
   refresh: () => api.post<ApiResponse<{ accessToken: string }>>('/auth/refresh'),
+
+  me: () => api.get<ApiResponse<import('../types').User>>('/auth/me'),
 };
 
 // ============================================================

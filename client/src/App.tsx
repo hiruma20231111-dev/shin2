@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import axios from 'axios';
 import { useAuthStore } from './stores/authStore';
+import { authApi } from './lib/api';
 import { Layout } from './components/layout/Layout';
 import { Spinner } from './components/ui/Spinner';
 import { Login } from './pages/Login';
@@ -27,21 +28,25 @@ export default function App() {
   const [hydrating, setHydrating] = useState(true);
   const setAuth = useAuthStore((s) => s.setAuth);
 
-  // On app load, attempt silent refresh to recover session
+  // On app load: silent refresh + fetch user profile so reload preserves session
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const res = await axios.post<ApiResponse<{ accessToken: string }>>(
+        const refreshRes = await axios.post<ApiResponse<{ accessToken: string }>>(
           '/api/auth/refresh',
           {},
           { withCredentials: true },
         );
-        if (!cancelled && res.data.success) {
-          // We need user info too — call a profile endpoint or rely on a follow-up
-          // For now, set token; user info will be missing until login form is filled
-          // Better: have refresh also return user. For now keep simple.
-          useAuthStore.getState().updateToken(res.data.data.accessToken);
+        if (cancelled || !refreshRes.data.success) {
+          if (!cancelled) setHydrating(false);
+          return;
+        }
+        useAuthStore.getState().updateToken(refreshRes.data.data.accessToken);
+
+        const meRes = await authApi.me();
+        if (!cancelled && meRes.data.success) {
+          useAuthStore.getState().setAuth(refreshRes.data.data.accessToken, meRes.data.data);
         }
       } catch {
         // No valid refresh token — stay logged out
