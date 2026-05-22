@@ -26,11 +26,11 @@ async function checkToolHealth(toolId: string, healthEndpoint: string): Promise<
 }
 
 export async function pollAllTools(): Promise<void> {
-  const result = await query('SELECT id, health_endpoint FROM tools WHERE is_active = true');
+  const result = await query<{ id: string; health_endpoint: string }>(
+    'SELECT id, health_endpoint FROM tools WHERE is_active = true',
+  );
   await Promise.allSettled(
-    result.rows.map((row: { id: string; health_endpoint: string }) =>
-      checkToolHealth(row.id, row.health_endpoint)
-    )
+    result.rows.map((row) => checkToolHealth(row.id, row.health_endpoint)),
   );
 }
 

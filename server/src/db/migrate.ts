@@ -1,6 +1,7 @@
 // ============================================================
 // Hub Workspace — Database Migration Runner
 // ============================================================
+import 'dotenv/config';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import pool from './pool';

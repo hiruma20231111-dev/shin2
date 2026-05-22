@@ -1,6 +1,7 @@
 // ============================================================
 // Hub Workspace — Database Seed
 // ============================================================
+import 'dotenv/config';
 import bcrypt from 'bcryptjs';
 import pool, { query } from './pool';
 import { BCRYPT_ROUNDS } from '../constants';
@@ -18,7 +19,7 @@ async function seed(): Promise<void> {
 
   // ── 2. Project templates ───────────────────────────────────
 
-  // Template 1: LP制作 スタンダード
+  // ── Template 1: LP制作 スタンダード（仕様書通り） ───────
   await query(
     `INSERT INTO project_templates (id, name, industry, description, is_system)
      VALUES ($1, $2, $3, $4, $5)
@@ -31,27 +32,26 @@ async function seed(): Promise<void> {
     [
       'tpl_lp_standard',
       'LP制作 スタンダード',
-      'Webマーケティング',
-      'ランディングページ制作の標準テンプレート。ヒアリングから公開まで6ステップで完結。',
+      '汎用',
+      'LP制作の標準テンプレート（6ステップ）',
       true,
     ]
   );
-  // Delete existing template tasks for idempotency
   await query(`DELETE FROM template_tasks WHERE template_id = $1`, ['tpl_lp_standard']);
   await query(
     `INSERT INTO template_tasks (template_id, title, tool_identifier, priority, duration_days, order_index)
      VALUES
-       ($1, 'クライアントヒアリング',       NULL,              'high',   1, 0),
-       ($1, 'コンセプト・構成設計',         'prompt_builder',  'high',   2, 1),
-       ($1, 'コピーライティング',           'prompt_builder',  'medium', 3, 2),
-       ($1, 'デザイン制作',                 'lp_builder',      'high',   5, 3),
-       ($1, 'コーディング・実装',           'lp_builder',      'medium', 4, 4),
-       ($1, 'テスト・公開',                 NULL,              'high',   1, 5)`,
+       ($1, 'ヒアリング・要件定義',     NULL,             'high',   2, 0),
+       ($1, 'プロンプト生成',           'prompt_builder', 'high',   1, 1),
+       ($1, 'LP制作（コーディング）',   'lp_builder',     'high',   5, 2),
+       ($1, 'クライアントレビュー',     NULL,             'medium', 3, 3),
+       ($1, '修正対応',                 'lp_builder',     'medium', 2, 4),
+       ($1, '納品・公開',               NULL,             'high',   1, 5)`,
     ['tpl_lp_standard']
   );
   console.log('[seed] tpl_lp_standard upserted.');
 
-  // Template 2: SNS運用 月額パック
+  // ── Template 2: SNS運用 月額パック（仕様書通り） ────────
   await query(
     `INSERT INTO project_templates (id, name, industry, description, is_system)
      VALUES ($1, $2, $3, $4, $5)
@@ -64,8 +64,8 @@ async function seed(): Promise<void> {
     [
       'tpl_sns_monthly',
       'SNS運用 月額パック',
-      'SNSマーケティング',
-      'Instagram/X/TikTok等SNSの月次運用テンプレート。投稿計画から分析レポートまで。',
+      '汎用',
+      'SNSの月次運用テンプレート（5ステップ）',
       true,
     ]
   );
@@ -73,16 +73,16 @@ async function seed(): Promise<void> {
   await query(
     `INSERT INTO template_tasks (template_id, title, tool_identifier, priority, duration_days, order_index)
      VALUES
-       ($1, '月次コンテンツ計画策定',     'prompt_builder',  'high',   2, 0),
-       ($1, '投稿素材・キャプション制作', 'prompt_builder',  'medium', 5, 1),
-       ($1, '予約投稿設定',               NULL,              'medium', 1, 2),
-       ($1, 'エンゲージメント対応',       NULL,              'low',    7, 3),
-       ($1, '月次分析レポート作成',       NULL,              'high',   2, 4)`,
+       ($1, '月次方針MTG',           NULL,            'high',   1, 0),
+       ($1, '投稿コンテンツ生成',     'sns_scheduler', 'high',   3, 1),
+       ($1, '広告クリエイティブ制作', 'banner_gen',    'medium', 2, 2),
+       ($1, 'スケジュール入稿',       'sns_scheduler', 'high',   1, 3),
+       ($1, '月次レポート作成',       'report_gen',    'medium', 2, 4)`,
     ['tpl_sns_monthly']
   );
   console.log('[seed] tpl_sns_monthly upserted.');
 
-  // Template 3: LP制作 美容サロン特化
+  // ── Template 3: LP制作 美容サロン特化（仕様書通り） ─────
   await query(
     `INSERT INTO project_templates (id, name, industry, description, is_system)
      VALUES ($1, $2, $3, $4, $5)
@@ -95,8 +95,8 @@ async function seed(): Promise<void> {
     [
       'tpl_lp_beauty',
       'LP制作 美容サロン特化',
-      '美容・エステ',
-      '美容サロン・エステ・ネイル等に特化したLP制作テンプレート。予約導線設計を含む7ステップ。',
+      '美容',
+      '美容サロン特化のLP制作テンプレート（7ステップ）',
       true,
     ]
   );
@@ -104,13 +104,13 @@ async function seed(): Promise<void> {
   await query(
     `INSERT INTO template_tasks (template_id, title, tool_identifier, priority, duration_days, order_index)
      VALUES
-       ($1, 'サロンコンセプトヒアリング',   NULL,              'high',   1, 0),
-       ($1, 'ターゲット・ペルソナ設計',     'prompt_builder',  'high',   1, 1),
-       ($1, '訴求コピー・キャッチコピー制作', 'prompt_builder', 'high',  3, 2),
-       ($1, 'ビジュアルデザイン',           'lp_builder',      'high',   4, 3),
-       ($1, '予約フォーム・CTA設計',        'lp_builder',      'high',   2, 4),
-       ($1, 'SP/PC レスポンシブ実装',       'lp_builder',      'medium', 3, 5),
-       ($1, 'SEO・公開・計測設定',          NULL,              'medium', 1, 6)`,
+       ($1, 'ヒアリング・要件定義',          NULL,             'high',   2, 0),
+       ($1, 'プロンプト生成（美容）',        'prompt_builder', 'high',   1, 1),
+       ($1, 'LP制作',                        'lp_builder',     'high',   4, 2),
+       ($1, 'バナー制作（SNS広告用）',       'banner_gen',     'medium', 2, 3),
+       ($1, 'クライアントレビュー',          NULL,             'medium', 3, 4),
+       ($1, '修正対応',                      'lp_builder',     'medium', 2, 5),
+       ($1, '納品・公開',                    NULL,             'high',   1, 6)`,
     ['tpl_lp_beauty']
   );
   console.log('[seed] tpl_lp_beauty upserted.');
@@ -166,6 +166,51 @@ async function seed(): Promise<void> {
       'offline',
     ]
   );
+
+  // Additional tools referenced by templates (registered to allow assignment)
+  for (const tool of [
+    {
+      identifier: 'banner_gen',
+      name: 'バナー生成ツール',
+      description: 'SNS広告・Webバナーのクリエイティブ生成',
+      endpoint: 'http://localhost:3004',
+      caps: { banner_design: true, ad_creative: true },
+    },
+    {
+      identifier: 'sns_scheduler',
+      name: 'SNSスケジューラー',
+      description: 'SNS投稿の予約・配信管理',
+      endpoint: 'http://localhost:3005',
+      caps: { posting: true, scheduling: true, content_generation: true },
+    },
+    {
+      identifier: 'report_gen',
+      name: 'レポート生成ツール',
+      description: '月次・週次の分析レポート自動生成',
+      endpoint: 'http://localhost:3006',
+      caps: { analytics: true, reporting: true },
+    },
+  ]) {
+    await query(
+      `INSERT INTO tools (identifier, name, description, endpoint_url, health_endpoint, capabilities, status)
+       VALUES ($1, $2, $3, $4, $5, $6, 'offline')
+       ON CONFLICT (identifier) DO UPDATE
+         SET name = EXCLUDED.name,
+             description = EXCLUDED.description,
+             endpoint_url = EXCLUDED.endpoint_url,
+             health_endpoint = EXCLUDED.health_endpoint,
+             capabilities = EXCLUDED.capabilities,
+             updated_at = now()`,
+      [
+        tool.identifier,
+        tool.name,
+        tool.description,
+        tool.endpoint,
+        `${tool.endpoint}/health`,
+        JSON.stringify(tool.caps),
+      ],
+    );
+  }
   console.log('[seed] Sample tools upserted.');
 
   await pool.end();

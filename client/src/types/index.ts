@@ -99,7 +99,7 @@ export interface ToolContextPacketRecord {
   task_id: string;
   tool_identifier: string;
   schema_version: string;
-  direction: 'outbound' | 'inbound';
+  direction: 'sent' | 'received';
   payload: Record<string, unknown>;
   result?: Record<string, unknown>;
   status: 'pending' | 'sent' | 'received' | 'error';
