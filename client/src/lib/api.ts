@@ -17,6 +17,32 @@ import type {
   PaginatedResponse,
 } from '../types';
 
+export interface CalendarTask extends Task {
+  project_name: string;
+  client_name: string;
+}
+
+export interface KpiData {
+  revenueHistory: { month: string; revenue: number; paid: number }[];
+  taskVelocity: { week: string; completed: number; created: number }[];
+  projectBreakdown: { status: string; count: number }[];
+  taskBreakdown: { priority: string; count: number; done: number }[];
+  toolUtilization: { tool: string; total: number; done: number }[];
+}
+
+export interface ResourceTask {
+  id: string;
+  title: string;
+  status: string;
+  priority: string;
+  assigned_tool: string | null;
+  start_date: string | null;
+  due_date: string | null;
+  project_id: string;
+  project_name: string;
+  client_name: string;
+}
+
 // ============================================================
 // Axios instance
 // ============================================================
@@ -236,6 +262,9 @@ export const tasksApi = {
       `/tasks/${id}/packets/${packetId}/result`,
       { result },
     ),
+
+  calendar: (from: string, to: string) =>
+    api.get<ApiResponse<CalendarTask[]>>('/tasks/calendar', { params: { from, to } }),
 };
 
 // ============================================================
@@ -254,6 +283,9 @@ export const toolsApi = {
 
   healthCheck: (id: string) =>
     api.post<ApiResponse<{ status: string; checked_at: string }>>(`/tools/${id}/health`),
+
+  regenerateKey: (id: string) =>
+    api.post<ApiResponse<{ api_key: string; api_key_warning: string }>>(`/tools/${id}/regenerate-key`),
 };
 
 // ============================================================
@@ -262,6 +294,8 @@ export const toolsApi = {
 
 export const dashboardApi = {
   get: () => api.get<ApiResponse<DashboardData>>('/dashboard'),
+  kpi: () => api.get<ApiResponse<KpiData>>('/dashboard/kpi'),
+  resources: () => api.get<ApiResponse<ResourceTask[]>>('/dashboard/resources'),
 };
 
 // ============================================================

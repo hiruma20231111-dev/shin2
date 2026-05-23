@@ -16,6 +16,10 @@ import { ToolRegistry } from './pages/tools/ToolRegistry';
 import { TemplateList } from './pages/templates/TemplateList';
 import { ActivityLogPage } from './pages/activity/ActivityLog';
 import { BillingList } from './pages/billing/BillingList';
+import { CalendarPage } from './pages/calendar/CalendarPage';
+import { KpiDashboard } from './pages/kpi/KpiDashboard';
+import { ResourcePlanningPage } from './pages/resources/ResourcePlanningPage';
+import { SettingsPage } from './pages/settings/SettingsPage';
 import type { ApiResponse } from './types';
 
 function ProtectedRoute() {
@@ -83,6 +87,10 @@ export default function App() {
             <Route path="/templates" element={<TemplateList />} />
             <Route path="/activity" element={<ActivityLogPage />} />
             <Route path="/billing" element={<BillingList />} />
+            <Route path="/calendar" element={<CalendarPage />} />
+            <Route path="/kpi" element={<KpiDashboard />} />
+            <Route path="/resources" element={<ResourcePlanningPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Route>

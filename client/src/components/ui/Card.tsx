@@ -1,8 +1,14 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 
-interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+interface CardProps {
   children: React.ReactNode;
   padding?: 'sm' | 'md' | 'lg' | 'none';
+  animate?: boolean;
+  className?: string;
+  onClick?: React.MouseEventHandler<HTMLDivElement>;
+  style?: React.CSSProperties;
+  id?: string;
 }
 
 const paddingMap = {
@@ -12,19 +18,28 @@ const paddingMap = {
   lg: 'p-6',
 };
 
-export function Card({ children, padding = 'md', className = '', ...props }: CardProps) {
+export function Card({ children, padding = 'md', className = '', animate = true, onClick, style, id }: CardProps) {
+  const cls = [
+    'bg-surface-800 border border-surface-600 rounded-xl shadow-sm',
+    paddingMap[padding],
+    className,
+  ].filter(Boolean).join(' ');
+
+  if (!animate) {
+    return <div className={cls} onClick={onClick} style={style} id={id}>{children}</div>;
+  }
+
   return (
-    <div
-      {...props}
-      className={[
-        'bg-surface-800 border border-surface-600 rounded-xl shadow-sm',
-        paddingMap[padding],
-        className,
-      ]
-        .filter(Boolean)
-        .join(' ')}
+    <motion.div
+      className={cls}
+      onClick={onClick}
+      style={style}
+      id={id}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25, ease: 'easeOut' }}
     >
       {children}
-    </div>
+    </motion.div>
   );
 }

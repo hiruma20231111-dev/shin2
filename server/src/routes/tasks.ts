@@ -28,6 +28,33 @@ const taskSchema = z.object({
 
 const taskUpdateSchema = taskSchema.partial();
 
+// ── GET /calendar — tasks for a date range ───────────────────
+router.get('/calendar', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const from = req.query['from'] as string | undefined;
+    const to = req.query['to'] as string | undefined;
+    if (!from || !to) {
+      return res.status(400).json({ success: false, error: { code: 'VALIDATION', message: 'from と to は必須です' } });
+    }
+    const result = await query<Task & { project_name: string; client_name: string }>(
+      `SELECT t.*, p.name AS project_name, c.name AS client_name
+       FROM tasks t
+       JOIN projects p ON p.id = t.project_id
+       JOIN clients c ON c.id = p.client_id
+       WHERE (
+         (t.due_date IS NOT NULL AND t.due_date >= $1 AND t.due_date <= $2)
+         OR
+         (t.start_date IS NOT NULL AND t.start_date >= $1 AND t.start_date <= $2)
+       )
+       ORDER BY COALESCE(t.due_date, t.start_date) ASC`,
+      [from, to],
+    );
+    return res.json({ success: true, data: result.rows });
+  } catch (e) {
+    return next(e);
+  }
+});
+
 // ── GET /:id ──────────────────────────────────────────────────
 router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
   try {
