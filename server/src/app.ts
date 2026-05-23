@@ -21,6 +21,7 @@ import adminRoutes from './routes/admin';
 import { errorHandler } from './middleware/errorHandler';
 import { AppError } from './errors';
 import { API_ERROR_CODES } from './constants';
+import { ensureInitialized } from './db/initialize';
 
 const app = express();
 
@@ -39,6 +40,11 @@ app.use(cookieParser());
 
 app.get('/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok', service: 'hub-workspace', time: new Date().toISOString() });
+});
+
+// Auto-run DB migrations on first request (idempotent — safe to re-run)
+app.use((_req: Request, _res: Response, next: NextFunction) => {
+  ensureInitialized().then(() => next()).catch(next);
 });
 
 app.use('/api/auth', authRoutes);

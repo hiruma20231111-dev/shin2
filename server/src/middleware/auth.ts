@@ -5,6 +5,7 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { AppError } from '../errors';
 import { API_ERROR_CODES } from '../constants';
+import { getJwtAccessSecret } from '../jwtSecrets';
 import type { JwtPayload } from '../types';
 
 // Extend Express Request to include authenticated user
@@ -28,21 +29,10 @@ export function authenticate(req: Request, _res: Response, next: NextFunction): 
     );
   }
 
-  const token = authHeader.slice(7); // Remove "Bearer " prefix
-  const secret = process.env['JWT_ACCESS_SECRET'];
-
-  if (!secret) {
-    return next(
-      new AppError(
-        '認証設定が不正です',
-        API_ERROR_CODES.INTERNAL_ERROR,
-        500
-      )
-    );
-  }
+  const token = authHeader.slice(7);
 
   try {
-    const decoded = jwt.verify(token, secret) as JwtPayload;
+    const decoded = jwt.verify(token, getJwtAccessSecret()) as JwtPayload;
     req.user = decoded;
     next();
   } catch (err) {

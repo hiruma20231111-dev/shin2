@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { query } from '../db/pool';
 import { AppError } from '../errors';
 import { authenticate } from '../middleware/auth';
+import { getJwtAccessSecret, getJwtRefreshSecret } from '../jwtSecrets';
 import {
   API_ERROR_CODES,
   JWT_ACCESS_EXPIRES_IN_SEC,
@@ -34,18 +35,13 @@ function hashRefreshToken(token: string): string {
 }
 
 function signAccessToken(payload: JwtPayload): string {
-  const secret = process.env['JWT_ACCESS_SECRET'];
-  if (!secret) throw new AppError('JWT_ACCESS_SECRET 未設定', API_ERROR_CODES.INTERNAL_ERROR, 500);
   const opts: SignOptions = { expiresIn: JWT_ACCESS_EXPIRES_IN_SEC };
-  return jwt.sign(payload, secret, opts);
+  return jwt.sign(payload, getJwtAccessSecret(), opts);
 }
 
 function signRefreshToken(payload: JwtPayload): string {
-  const secret = process.env['JWT_REFRESH_SECRET'];
-  if (!secret) throw new AppError('JWT_REFRESH_SECRET 未設定', API_ERROR_CODES.INTERNAL_ERROR, 500);
   const opts: SignOptions = { expiresIn: JWT_REFRESH_EXPIRES_IN_SEC };
-  // jti makes each token unique even if issued in the same second
-  return jwt.sign({ ...payload, jti: crypto.randomUUID() }, secret, opts);
+  return jwt.sign({ ...payload, jti: crypto.randomUUID() }, getJwtRefreshSecret(), opts);
 }
 
 function setRefreshCookie(res: Response, token: string): void {
@@ -141,12 +137,9 @@ router.post('/refresh', async (req: Request, res: Response, next: NextFunction) 
       throw new AppError('リフレッシュトークンがありません', API_ERROR_CODES.UNAUTHORIZED, 401);
     }
 
-    const secret = process.env['JWT_REFRESH_SECRET'];
-    if (!secret) throw new AppError('JWT_REFRESH_SECRET 未設定', API_ERROR_CODES.INTERNAL_ERROR, 500);
-
     let payload: JwtPayload;
     try {
-      payload = jwt.verify(token, secret) as JwtPayload;
+      payload = jwt.verify(token, getJwtRefreshSecret()) as JwtPayload;
     } catch {
       throw new AppError('リフレッシュトークンが無効です', API_ERROR_CODES.UNAUTHORIZED, 401);
     }
