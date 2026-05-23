@@ -5,6 +5,7 @@ import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Spinner } from '../components/ui/Spinner';
 import { dashboardApi } from '../lib/api';
+import { AdvisorPanel } from '../components/ai/AdvisorPanel';
 
 function fmtYen(n: number): string {
   return `¥${n.toLocaleString('ja-JP')}`;
@@ -28,6 +29,12 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6">
+      <AdvisorPanel
+        endpoint="/ai/dashboard-summary"
+        title="進捗サマリー & 推奨アクション"
+        queryKey={['ai', 'dashboard-summary']}
+      />
+
       {/* Stat row */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>

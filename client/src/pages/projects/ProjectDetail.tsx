@@ -13,9 +13,11 @@ import { KanbanBoard } from '../../components/kanban/KanbanBoard';
 import { GanttChart } from '../../components/gantt/GanttChart';
 import { projectsApi, tasksApi, toolsApi } from '../../lib/api';
 import { useToastStore } from '../../stores/toastStore';
+import { AdvisorPanel } from '../../components/ai/AdvisorPanel';
+import { ArtifactsTab } from './ArtifactsTab';
 import type { KanbanData, Task } from '../../types';
 
-type Tab = 'kanban' | 'gantt' | 'tasks' | 'overview';
+type Tab = 'kanban' | 'gantt' | 'tasks' | 'artifacts' | 'overview';
 
 export function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
@@ -94,11 +96,19 @@ export function ProjectDetail() {
         <Button onClick={() => { setDefaultStatus('todo'); setTaskFormOpen(true); }}>＋ タスク追加</Button>
       </div>
 
+      <AdvisorPanel
+        endpoint={`/ai/project-advice/${id}`}
+        title="プロジェクト診断 & ツール活用アドバイス"
+        queryKey={['ai', 'project-advice', id]}
+        autoFetch={false}
+      />
+
       <div className="flex gap-1 border-b border-surface-700">
         {([
           { key: 'kanban', label: 'カンバン' },
           { key: 'gantt', label: 'ガント' },
           { key: 'tasks', label: 'タスク一覧' },
+          { key: 'artifacts', label: '成果物' },
           { key: 'overview', label: '概要' },
         ] as { key: Tab; label: string }[]).map((t) => (
           <button
@@ -135,6 +145,8 @@ export function ProjectDetail() {
       )}
 
       {tab === 'tasks' && kanban && <TaskTable data={kanban} />}
+
+      {tab === 'artifacts' && <ArtifactsTab projectId={id!} />}
 
       {tab === 'overview' && (
         <Card>

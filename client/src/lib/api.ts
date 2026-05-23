@@ -304,6 +304,38 @@ export const activityApi = {
 // Invoices API
 // ============================================================
 
+// ============================================================
+// Artifacts API
+// ============================================================
+
+export interface Artifact {
+  id: string;
+  project_id: string;
+  task_id: string | null;
+  tool_identifier: string | null;
+  title: string;
+  artifact_type: 'file' | 'url' | 'text' | 'image' | 'json';
+  content: string | null;
+  url: string | null;
+  metadata: Record<string, unknown>;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export const artifactsApi = {
+  list: (projectId: string) =>
+    api.get<ApiResponse<Artifact[]>>(`/projects/${projectId}/artifacts`),
+  create: (projectId: string, data: Partial<Artifact>) =>
+    api.post<ApiResponse<Artifact>>(`/projects/${projectId}/artifacts`, data),
+  delete: (projectId: string, artifactId: string) =>
+    api.delete<ApiResponse<null>>(`/projects/${projectId}/artifacts/${artifactId}`),
+};
+
+// ============================================================
+// Invoices API
+// ============================================================
+
 export const invoicesApi = {
   list: (params?: {
     client_id?: string;

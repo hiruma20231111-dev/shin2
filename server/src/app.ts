@@ -18,6 +18,8 @@ import activityLogRoutes from './routes/activityLog';
 import invoicesRoutes from './routes/invoices';
 import workflowsRoutes from './routes/workflows';
 import adminRoutes from './routes/admin';
+import aiRoutes from './routes/ai';
+import artifactsRoutes from './routes/artifacts';
 import { errorHandler } from './middleware/errorHandler';
 import { AppError } from './errors';
 import { API_ERROR_CODES } from './constants';
@@ -58,6 +60,8 @@ app.use('/api/activity', activityLogRoutes);
 app.use('/api/invoices', invoicesRoutes);
 app.use('/api/workflows', workflowsRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/projects/:projectId/artifacts', artifactsRoutes);
 
 app.use((_req: Request, _res: Response, next: NextFunction) => {
   next(new AppError('エンドポイントが見つかりません', API_ERROR_CODES.NOT_FOUND, 404));
