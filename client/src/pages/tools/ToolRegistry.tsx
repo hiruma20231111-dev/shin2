@@ -120,8 +120,17 @@ function ToolForm({ isOpen, onClose }: { isOpen: boolean; onClose: () => void })
       setIdentifier(''); setName(''); setDescription('');
       setEndpointUrl(''); setHealthEndpoint(''); setCapabilities('{}');
     },
-    onError: (e) => {
-      setError(e instanceof Error ? e.message : '登録に失敗しました');
+    onError: (e: unknown) => {
+      const axiosMsg = (e as { response?: { data?: { error?: { message?: string; details?: unknown } } } })
+        ?.response?.data?.error;
+      if (axiosMsg?.details && Array.isArray(axiosMsg.details)) {
+        const msgs = (axiosMsg.details as { message: string }[]).map((d) => d.message).join('、');
+        setError(msgs);
+      } else if (axiosMsg?.message) {
+        setError(axiosMsg.message);
+      } else {
+        setError(e instanceof Error ? e.message : '登録に失敗しました');
+      }
     },
   });
 
@@ -137,8 +146,8 @@ function ToolForm({ isOpen, onClose }: { isOpen: boolean; onClose: () => void })
         <Input label="識別子 *" value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="例: prompt_builder" required helper="半角英小文字とアンダースコアのみ" />
         <Input label="表示名 *" value={name} onChange={(e) => setName(e.target.value)} required />
         <Textarea label="説明" value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
-        <Input label="エンドポイントURL *" value={endpointUrl} onChange={(e) => setEndpointUrl(e.target.value)} placeholder="https://..." required />
-        <Input label="ヘルスチェックURL *" value={healthEndpoint} onChange={(e) => setHealthEndpoint(e.target.value)} placeholder="https://.../health" required />
+        <Input label="エンドポイントURL *" value={endpointUrl} onChange={(e) => setEndpointUrl(e.target.value)} placeholder="https://your-tool.example.com" required helper="ツールのAPIエンドポイント（未使用の場合は https://example.com など仮URLでも可）" />
+        <Input label="ヘルスチェックURL *" value={healthEndpoint} onChange={(e) => setHealthEndpoint(e.target.value)} placeholder="https://your-tool.example.com/health" required helper="ツールの死活監視URL（仮の場合は https://example.com/health など）" />
         <Textarea
           label="Capabilities (JSON)"
           value={capabilities}
