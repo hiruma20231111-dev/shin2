@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "npm run build --workspace=server && npm run build --workspace=client",
+  "buildCommand": "npm --prefix server run build && npm --prefix client run build",
   "outputDirectory": "client/dist",
   "framework": null,
   "functions": {
