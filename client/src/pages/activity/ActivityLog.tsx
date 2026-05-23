@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format, parseISO } from 'date-fns';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { Card } from '../../components/ui/Card';
 import { Select } from '../../components/ui/Select';
 import { Button } from '../../components/ui/Button';
@@ -27,6 +28,14 @@ export function ActivityLogPage() {
   const logs = data?.data ?? [];
   const total = data?.total ?? 0;
   const totalPages = Math.ceil(total / 50);
+  const logContainerRef = useRef<HTMLDivElement>(null);
+
+  const rowVirtualizer = useVirtualizer({
+    count: logs.length,
+    getScrollElement: () => logContainerRef.current,
+    estimateSize: () => 41,
+    overscan: 10,
+  });
 
   return (
     <div className="space-y-4">
@@ -52,31 +61,56 @@ export function ActivityLogPage() {
 
       {!isLoading && (
         <Card padding="none">
+          {/* Fixed header */}
           <table className="w-full text-sm">
             <thead className="bg-surface-900/60 text-xs text-gray-400">
               <tr>
-                <th className="text-left px-4 py-3">日時</th>
+                <th className="text-left px-4 py-3 w-44">日時</th>
                 <th className="text-left px-4 py-3">アクション</th>
-                <th className="text-left px-4 py-3">種別</th>
-                <th className="text-left px-4 py-3">エンティティID</th>
+                <th className="text-left px-4 py-3 w-28">種別</th>
+                <th className="text-left px-4 py-3 w-28">エンティティID</th>
               </tr>
             </thead>
-            <tbody>
-              {logs.map((a) => (
-                <tr key={a.id} className="border-t border-surface-700">
-                  <td className="px-4 py-3 text-xs text-gray-400 font-mono">
-                    {format(parseISO(a.created_at), 'yyyy/MM/dd HH:mm:ss')}
-                  </td>
-                  <td className="px-4 py-3 text-gray-100">{a.action}</td>
-                  <td className="px-4 py-3 text-xs text-gray-300">{a.entity_type}</td>
-                  <td className="px-4 py-3 text-xs text-gray-500 font-mono">{a.entity_id.slice(0, 8)}</td>
-                </tr>
-              ))}
-              {logs.length === 0 && (
-                <tr><td colSpan={4} className="px-4 py-6 text-center text-sm text-gray-500">ログがありません</td></tr>
-              )}
-            </tbody>
           </table>
+          {logs.length === 0 ? (
+            <p className="px-4 py-6 text-center text-sm text-gray-500">ログがありません</p>
+          ) : (
+            <div
+              ref={logContainerRef}
+              className="overflow-y-auto"
+              style={{ maxHeight: '65vh' }}
+            >
+              <div style={{ height: rowVirtualizer.getTotalSize(), position: 'relative' }}>
+                {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                  const a = logs[virtualRow.index];
+                  return (
+                    <div
+                      key={a.id}
+                      data-index={virtualRow.index}
+                      ref={rowVirtualizer.measureElement}
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        transform: `translateY(${virtualRow.start}px)`,
+                      }}
+                      className="flex border-t border-surface-700 text-sm"
+                    >
+                      <div className="px-4 py-3 text-xs text-gray-400 font-mono w-44 shrink-0">
+                        {format(parseISO(a.created_at), 'yyyy/MM/dd HH:mm:ss')}
+                      </div>
+                      <div className="px-4 py-3 text-gray-100 flex-1">{a.action}</div>
+                      <div className="px-4 py-3 text-xs text-gray-300 w-28 shrink-0">{a.entity_type}</div>
+                      <div className="px-4 py-3 text-xs text-gray-500 font-mono w-28 shrink-0">
+                        {a.entity_id.slice(0, 8)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </Card>
       )}
 

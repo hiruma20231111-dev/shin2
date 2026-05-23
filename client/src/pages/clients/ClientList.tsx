@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { format, parseISO } from 'date-fns';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -35,6 +36,14 @@ export function ClientList() {
   });
 
   const clients = data?.data ?? [];
+  const listContainerRef = useRef<HTMLDivElement>(null);
+
+  const rowVirtualizer = useVirtualizer({
+    count: clients.length,
+    getScrollElement: () => listContainerRef.current,
+    estimateSize: () => 45,
+    overscan: 10,
+  });
 
   return (
     <div className="space-y-4">
@@ -135,24 +144,48 @@ export function ClientList() {
                   <th className="text-left px-4 py-3">更新日</th>
                 </tr>
               </thead>
-              <tbody>
-                {clients.map((c) => (
-                  <tr
+            </table>
+          </div>
+          {/* Virtualized scroll container for list rows */}
+          <div
+            ref={listContainerRef}
+            className="overflow-y-auto"
+            style={{ maxHeight: '60vh' }}
+          >
+            <div
+              style={{
+                height: rowVirtualizer.getTotalSize(),
+                position: 'relative',
+              }}
+            >
+              {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                const c = clients[virtualRow.index];
+                return (
+                  <div
                     key={c.id}
-                    className="border-t border-surface-700 hover:bg-surface-700/40 cursor-pointer"
+                    data-index={virtualRow.index}
+                    ref={rowVirtualizer.measureElement}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                    className="flex border-t border-surface-700 hover:bg-surface-700/40 cursor-pointer text-sm"
                     onClick={() => window.location.assign(`/clients/${c.id}`)}
                   >
-                    <td className="px-4 py-3 text-gray-100">{c.name}</td>
-                    <td className="px-4 py-3 text-gray-300">{c.industry}</td>
-                    <td className="px-4 py-3"><Badge status={c.status} type="client" /></td>
-                    <td className="px-4 py-3 text-xs text-gray-400">{c.tags?.join(', ') ?? ''}</td>
-                    <td className="px-4 py-3 text-xs text-gray-500">
+                    <div className="px-4 py-3 text-gray-100 flex-[2]">{c.name}</div>
+                    <div className="px-4 py-3 text-gray-300 flex-[2]">{c.industry}</div>
+                    <div className="px-4 py-3 flex-[1]"><Badge status={c.status} type="client" /></div>
+                    <div className="px-4 py-3 text-xs text-gray-400 flex-[2]">{c.tags?.join(', ') ?? ''}</div>
+                    <div className="px-4 py-3 text-xs text-gray-500 flex-[1]">
                       {format(parseISO(c.updated_at), 'yyyy/MM/dd')}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </Card>
       )}

@@ -44,7 +44,8 @@ function signRefreshToken(payload: JwtPayload): string {
   const secret = process.env['JWT_REFRESH_SECRET'];
   if (!secret) throw new AppError('JWT_REFRESH_SECRET 未設定', API_ERROR_CODES.INTERNAL_ERROR, 500);
   const opts: SignOptions = { expiresIn: JWT_REFRESH_EXPIRES_IN_SEC };
-  return jwt.sign(payload, secret, opts);
+  // jti makes each token unique even if issued in the same second
+  return jwt.sign({ ...payload, jti: crypto.randomUUID() }, secret, opts);
 }
 
 function setRefreshCookie(res: Response, token: string): void {
