@@ -218,6 +218,30 @@ CREATE INDEX IF NOT EXISTS idx_artifacts_project_id ON project_artifacts(project
 CREATE INDEX IF NOT EXISTS idx_artifacts_task_id    ON project_artifacts(task_id);
 CREATE INDEX IF NOT EXISTS idx_artifacts_tool       ON project_artifacts(tool_identifier);
 
+-- Integration keys: stable identifiers that external tools use to reference
+-- projects and authenticate themselves.
+ALTER TABLE projects   ADD COLUMN IF NOT EXISTS integration_key text;
+ALTER TABLE tools      ADD COLUMN IF NOT EXISTS api_key_hash    text;
+ALTER TABLE tools      ADD COLUMN IF NOT EXISTS api_key_prefix  text;
+
+UPDATE projects
+SET integration_key = lower(replace(uuid_generate_v4()::text, '-', ''))
+WHERE integration_key IS NULL;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_indexes WHERE indexname = 'idx_projects_integration_key'
+  ) THEN
+    CREATE UNIQUE INDEX idx_projects_integration_key ON projects(integration_key);
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_indexes WHERE indexname = 'idx_tools_api_key_prefix'
+  ) THEN
+    CREATE INDEX idx_tools_api_key_prefix ON tools(api_key_prefix);
+  END IF;
+END $$;
+
 CREATE INDEX IF NOT EXISTS idx_clients_status       ON clients(status);
 CREATE INDEX IF NOT EXISTS idx_clients_industry     ON clients(industry);
 CREATE INDEX IF NOT EXISTS idx_projects_client_id   ON projects(client_id);

@@ -8,6 +8,7 @@ import { authenticate } from '../middleware/auth';
 import { AppError } from '../errors';
 import { API_ERROR_CODES, TOOL_STATUS } from '../constants';
 import { logActivity } from '../services/activityLogger';
+import { generateToolApiKey } from './integrations';
 import type { Tool } from '../types';
 
 const router = Router();
@@ -39,9 +40,10 @@ router.get('/', async (_req: Request, res: Response, next: NextFunction) => {
 router.post('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const body = toolSchema.parse(req.body);
+    const { apiKey, prefix, hash } = await generateToolApiKey();
     const result = await query<Tool>(
-      `INSERT INTO tools (id, identifier, name, description, endpoint_url, health_endpoint, capabilities, is_active)
-       VALUES (uuid_generate_v4(), $1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO tools (id, identifier, name, description, endpoint_url, health_endpoint, capabilities, is_active, api_key_hash, api_key_prefix)
+       VALUES (uuid_generate_v4(), $1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
       [
         body.identifier,
@@ -51,6 +53,8 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
         body.health_endpoint,
         JSON.stringify(body.capabilities),
         body.is_active,
+        hash,
+        prefix,
       ],
     );
     await logActivity({
@@ -59,12 +63,45 @@ router.post('/', async (req: Request, res: Response, next: NextFunction) => {
       entityType: 'tool',
       entityId: result.rows[0].id,
     });
-    res.status(201).json({ success: true, data: result.rows[0] });
+    // Return the API key ONCE in the response. It cannot be retrieved later.
+    res.status(201).json({
+      success: true,
+      data: {
+        ...result.rows[0],
+        api_key: apiKey,
+        api_key_warning: 'このAPIキーはこの一度しか表示されません。安全な場所に保管してください。',
+      },
+    });
   } catch (e) {
     if (e instanceof Error && /unique/i.test(e.message)) {
       next(new AppError('同じ identifier のツールが既に登録されています', API_ERROR_CODES.DUPLICATE_ENTRY, 409));
       return;
     }
+    next(e);
+  }
+});
+
+// ── POST /:id/regenerate-key — invalidate old key, return new one ─
+router.post('/:id/regenerate-key', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params['id'];
+    const { apiKey, prefix, hash } = await generateToolApiKey();
+    const result = await query(
+      `UPDATE tools SET api_key_hash = $1, api_key_prefix = $2, updated_at = now()
+       WHERE id = $3 RETURNING id`,
+      [hash, prefix, id],
+    );
+    if (result.rowCount === 0) {
+      throw new AppError('ツールが見つかりません', API_ERROR_CODES.NOT_FOUND, 404);
+    }
+    res.json({
+      success: true,
+      data: {
+        api_key: apiKey,
+        api_key_warning: 'このAPIキーはこの一度しか表示されません。安全な場所に保管してください。',
+      },
+    });
+  } catch (e) {
     next(e);
   }
 });

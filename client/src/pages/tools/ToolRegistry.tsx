@@ -135,6 +135,19 @@ function ToolForm({ isOpen, onClose }: { isOpen: boolean; onClose: () => void })
   const [healthEndpoint, setHealthEndpoint] = useState('');
   const [capabilities, setCapabilities] = useState('{}');
   const [error, setError] = useState<string | null>(null);
+  const [createdApiKey, setCreatedApiKey] = useState<string | null>(null);
+  const [createdToolIdentifier, setCreatedToolIdentifier] = useState<string | null>(null);
+
+  function reset() {
+    setIdentifier(''); setName(''); setDescription('');
+    setEndpointUrl(''); setHealthEndpoint(''); setCapabilities('{}');
+    setError(null); setCreatedApiKey(null); setCreatedToolIdentifier(null);
+  }
+
+  function handleClose() {
+    reset();
+    onClose();
+  }
 
   const mutation = useMutation({
     mutationFn: () => {
@@ -153,12 +166,18 @@ function ToolForm({ isOpen, onClose }: { isOpen: boolean; onClose: () => void })
         capabilities: caps,
       });
     },
-    onSuccess: () => {
+    onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ['tools'] });
       addToast({ type: 'success', message: 'ツールを登録しました' });
-      onClose();
-      setIdentifier(''); setName(''); setDescription('');
-      setEndpointUrl(''); setHealthEndpoint(''); setCapabilities('{}');
+      if (res.data.success) {
+        const data = res.data.data as unknown as { api_key?: string; identifier?: string };
+        if (data.api_key) {
+          setCreatedApiKey(data.api_key);
+          setCreatedToolIdentifier(data.identifier ?? identifier);
+          return;
+        }
+      }
+      handleClose();
     },
     onError: (e: unknown) => {
       const axiosMsg = (e as { response?: { data?: { error?: { message?: string; details?: unknown } } } })
@@ -180,8 +199,58 @@ function ToolForm({ isOpen, onClose }: { isOpen: boolean; onClose: () => void })
     mutation.mutate();
   }
 
+  if (createdApiKey) {
+    return (
+      <Modal isOpen={isOpen} onClose={handleClose} title="APIキーが発行されました" size="md">
+        <div className="space-y-4">
+          <div className="rounded-lg bg-amber-950/30 border border-amber-700/40 p-3">
+            <p className="text-sm text-amber-200 font-semibold mb-1">
+              ⚠️ このキーは一度しか表示されません
+            </p>
+            <p className="text-xs text-amber-300/70">
+              必ず安全な場所（パスワード管理ツールなど）に保存してください。
+            </p>
+          </div>
+          <div>
+            <label className="text-xs text-gray-400">ツール識別子</label>
+            <code className="block mt-1 text-sm bg-surface-700 rounded px-2 py-1.5 font-mono text-gray-100">
+              {createdToolIdentifier}
+            </code>
+          </div>
+          <div>
+            <label className="text-xs text-gray-400">APIキー</label>
+            <div className="flex gap-2 mt-1">
+              <code className="flex-1 text-xs bg-surface-700 rounded px-2 py-1.5 font-mono text-gray-100 break-all">
+                {createdApiKey}
+              </code>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  navigator.clipboard.writeText(createdApiKey);
+                  addToast({ type: 'success', message: 'クリップボードにコピーしました' });
+                }}
+              >
+                コピー
+              </Button>
+            </div>
+          </div>
+          <div className="text-xs text-gray-400 space-y-1">
+            <p>このキーを使って、外部ツールから以下のヘッダーで認証できます：</p>
+            <code className="block bg-surface-700 rounded px-2 py-1 text-gray-200">
+              X-Tool-Api-Key: {createdApiKey.slice(0, 12)}...
+            </code>
+          </div>
+          <div className="flex justify-end pt-2">
+            <Button onClick={handleClose}>閉じる</Button>
+          </div>
+        </div>
+      </Modal>
+    );
+  }
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="ツール登録" size="md">
+    <Modal isOpen={isOpen} onClose={handleClose} title="ツール登録" size="md">
       <form onSubmit={handleSubmit} className="space-y-3">
         <Input label="識別子 *" value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="例: prompt_builder" required helper="半角英小文字とアンダースコアのみ" />
         <Input label="表示名 *" value={name} onChange={(e) => setName(e.target.value)} required />
@@ -197,7 +266,7 @@ function ToolForm({ isOpen, onClose }: { isOpen: boolean; onClose: () => void })
         />
         {error && <p className="text-sm text-red-400">{error}</p>}
         <div className="flex justify-end gap-2 pt-2">
-          <Button type="button" variant="ghost" onClick={onClose}>キャンセル</Button>
+          <Button type="button" variant="ghost" onClick={handleClose}>キャンセル</Button>
           <Button type="submit" loading={mutation.isPending}>登録</Button>
         </div>
       </form>

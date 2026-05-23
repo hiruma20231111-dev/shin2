@@ -15,6 +15,7 @@ import { projectsApi, tasksApi, toolsApi } from '../../lib/api';
 import { useToastStore } from '../../stores/toastStore';
 import { AdvisorPanel } from '../../components/ai/AdvisorPanel';
 import { ArtifactsTab } from './ArtifactsTab';
+import { IntegrationKeyPanel } from './IntegrationKeyPanel';
 import type { KanbanData, Task } from '../../types';
 
 type Tab = 'kanban' | 'gantt' | 'tasks' | 'artifacts' | 'overview';
@@ -149,14 +150,17 @@ export function ProjectDetail() {
       {tab === 'artifacts' && <ArtifactsTab projectId={id!} />}
 
       {tab === 'overview' && (
-        <Card>
-          <h3 className="text-sm font-semibold text-gray-200 mb-3">プロジェクト情報</h3>
-          <dl className="space-y-2 text-sm">
-            <div><dt className="text-xs text-gray-400">説明</dt><dd className="text-gray-100 whitespace-pre-wrap">{project.description || '—'}</dd></div>
-            <div><dt className="text-xs text-gray-400">期間</dt><dd className="text-gray-100">{project.start_date ?? '—'} ～ {project.end_date ?? '—'}</dd></div>
-            <div><dt className="text-xs text-gray-400">テンプレート</dt><dd className="text-gray-100">{project.template_id ?? '—'}</dd></div>
-          </dl>
-        </Card>
+        <div className="space-y-4">
+          <Card>
+            <h3 className="text-sm font-semibold text-gray-200 mb-3">プロジェクト情報</h3>
+            <dl className="space-y-2 text-sm">
+              <div><dt className="text-xs text-gray-400">説明</dt><dd className="text-gray-100 whitespace-pre-wrap">{project.description || '—'}</dd></div>
+              <div><dt className="text-xs text-gray-400">期間</dt><dd className="text-gray-100">{project.start_date ?? '—'} ～ {project.end_date ?? '—'}</dd></div>
+              <div><dt className="text-xs text-gray-400">テンプレート</dt><dd className="text-gray-100">{project.template_id ?? '—'}</dd></div>
+            </dl>
+          </Card>
+          <IntegrationKeyPanel project={project} />
+        </div>
       )}
 
       <TaskForm

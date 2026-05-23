@@ -43,6 +43,7 @@ export interface Project {
   template_id?: string;
   start_date?: string;
   end_date?: string;
+  integration_key?: string;
   created_at: string;
   updated_at: string;
 }
