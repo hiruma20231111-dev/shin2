@@ -8,12 +8,16 @@ import { BCRYPT_ROUNDS } from '../constants';
 
 async function seed(): Promise<void> {
   // ── 1. Admin user ──────────────────────────────────────────
-  const passwordHash = await bcrypt.hash('HubAdmin2024!', BCRYPT_ROUNDS);
+  const passwordHash = await bcrypt.hash('shin0510', BCRYPT_ROUNDS);
   await query(
     `INSERT INTO users (email, password_hash, name, role)
      VALUES ($1, $2, $3, $4)
-     ON CONFLICT (email) DO NOTHING`,
-    ['admin@hub.local', passwordHash, '管理者', 'admin']
+     ON CONFLICT (email) DO UPDATE
+       SET password_hash = EXCLUDED.password_hash,
+           name = EXCLUDED.name,
+           role = EXCLUDED.role,
+           is_active = true`,
+    ['hiruma20231111@gmail.com', passwordHash, '管理者', 'admin']
   );
   console.log('[seed] Admin user upserted.');
 

@@ -3,8 +3,8 @@ import request from 'supertest';
 import pool from '../db/pool';
 import app from '../app';
 
-const ADMIN_EMAIL = 'admin@hub.local';
-const ADMIN_PASS = 'HubAdmin2024!';
+const ADMIN_EMAIL = 'hiruma20231111@gmail.com';
+const ADMIN_PASS = 'shin0510';
 
 let accessToken: string;
 let refreshCookie: string;
