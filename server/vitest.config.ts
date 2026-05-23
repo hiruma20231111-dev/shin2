@@ -4,6 +4,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    exclude: ['dist/**', 'node_modules/**'],
     env: {
       NODE_ENV: 'test',
       DATABASE_URL: 'postgresql://hub_user:hub_pass@localhost:5432/hub_workspace',

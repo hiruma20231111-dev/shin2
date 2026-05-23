@@ -10,6 +10,6 @@
     "resolveJsonModule": true,
     "outDir": "./dist"
   },
-  "include": ["api/**/*", "server/src/**/*"],
+  "include": ["api/**/*", "server/api/**/*", "server/src/**/*"],
   "exclude": ["node_modules", "server/src/__tests__", "client"]
 }
