@@ -36,6 +36,29 @@ export function ToolRegistry() {
     onError: () => addToast({ type: 'error', message: 'ヘルスチェックに失敗しました' }),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => toolsApi.delete(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tools'] });
+      addToast({ type: 'success', message: 'ツールを削除しました' });
+    },
+    onError: () => addToast({ type: 'error', message: '削除に失敗しました' }),
+  });
+
+  function handleDelete(id: string, name: string) {
+    if (window.confirm(`「${name}」を削除します。よろしいですか？`)) {
+      deleteMutation.mutate(id);
+    }
+  }
+
+  function handleLaunch(url: string) {
+    if (!url) {
+      addToast({ type: 'error', message: 'エンドポイントURLが未設定です' });
+      return;
+    }
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
@@ -62,14 +85,31 @@ export function ToolRegistry() {
                 <div className="flex justify-between"><dt>エンドポイント</dt><dd className="text-gray-300 truncate ml-2">{t.endpoint_url}</dd></div>
                 <div className="flex justify-between"><dt>最終ヘルスチェック</dt><dd className="text-gray-300">{t.last_health_check ? format(parseISO(t.last_health_check), 'MM/dd HH:mm') : '—'}</dd></div>
               </dl>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={() => handleLaunch(t.endpoint_url)}
+                >
+                  起動
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => healthMutation.mutate(t.id)}
+                  loading={healthMutation.isPending && healthMutation.variables === t.id}
+                >
+                  ヘルスチェック
+                </Button>
+              </div>
               <Button
                 size="sm"
-                variant="secondary"
-                onClick={() => healthMutation.mutate(t.id)}
-                loading={healthMutation.isPending && healthMutation.variables === t.id}
-                className="mt-3 w-full"
+                variant="ghost"
+                onClick={() => handleDelete(t.id, t.name)}
+                loading={deleteMutation.isPending && deleteMutation.variables === t.id}
+                className="mt-2 w-full text-red-400 hover:text-red-300"
               >
-                ヘルスチェック実行
+                削除
               </Button>
             </Card>
           ))}

@@ -191,6 +191,33 @@ CREATE TABLE IF NOT EXISTS refresh_tokens (
   revoked_at timestamptz
 );
 
+CREATE TABLE IF NOT EXISTS system_config (
+  key        text        PRIMARY KEY,
+  value      text        NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS project_artifacts (
+  id              uuid        PRIMARY KEY DEFAULT uuid_generate_v4(),
+  project_id      uuid        NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  task_id         uuid        REFERENCES tasks(id) ON DELETE SET NULL,
+  tool_identifier text,
+  title           text        NOT NULL,
+  artifact_type   text        NOT NULL DEFAULT 'file'
+                              CHECK (artifact_type IN ('file', 'url', 'text', 'image', 'json')),
+  content         text,
+  url             text,
+  metadata        jsonb       NOT NULL DEFAULT '{}',
+  created_by      uuid        REFERENCES users(id) ON DELETE SET NULL,
+  created_at      timestamptz NOT NULL DEFAULT now(),
+  updated_at      timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_artifacts_project_id ON project_artifacts(project_id);
+CREATE INDEX IF NOT EXISTS idx_artifacts_task_id    ON project_artifacts(task_id);
+CREATE INDEX IF NOT EXISTS idx_artifacts_tool       ON project_artifacts(tool_identifier);
+
 CREATE INDEX IF NOT EXISTS idx_clients_status       ON clients(status);
 CREATE INDEX IF NOT EXISTS idx_clients_industry     ON clients(industry);
 CREATE INDEX IF NOT EXISTS idx_projects_client_id   ON projects(client_id);
